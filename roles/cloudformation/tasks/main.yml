@@ -1,0 +1,19 @@
+- name: "create stack"
+  cloudformation:
+    stack_name: "{{ name }}"
+    state: present
+    region: "{{ aws.region }}"
+    disable_rollback: true
+    template: "roles/cloudformation/files/django.json"
+    template_parameters:
+      ResourceName: "{{ name }}"
+      OwnerName: "{{ owner }}"
+      Region: "{{ aws.region }}"
+    tags:
+      Name: "{{ name }}"
+      owner: "{{ owner }}"
+  register: cloudformation_result
+
+- name: "show created stack"
+  debug: var=cloudformation_result
+  when: cloudformation_result | success

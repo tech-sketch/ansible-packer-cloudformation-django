@@ -1,0 +1,4 @@
+name: "django-practice"
+owner: "nmatsui"
+aws:
+  region: "ap-northeast-1"

@@ -1,0 +1,251 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Description": "ELB-RDS(MySQL) Django CloudFormation Template",
+  "Parameters": {
+    "ResourceName": {
+      "Type": "String",
+      "Description": "Name tag"
+    },
+    "OwnerName": {
+      "Type": "String",
+      "Description": "owner tag"
+    },
+    "Region": {
+      "Type": "String",
+      "Description": "Target region",
+      "Default": "ap-northeast-1",
+      "AllowedValues": ["ap-northeast-1"]
+    }
+  },
+  "Mappings": {
+    "CidrMap": {
+      "VPC"    : { "block": "10.10.0.0/16" },
+      "Public" : { "AZ1": "10.10.11.0/24", "AZ2": "10.10.21.0/24" },
+      "Private": { "AZ1": "10.10.12.0/24", "AZ2": "10.10.22.0/24" }
+    },
+    "PortMap": {
+      "HTTP"   : { "port": "80" },
+      "SSH"    : { "port": "22" },
+      "MySQL"  : { "port": "3306" }
+    }
+  },
+  "Resources": {
+    "VPC": {
+      "Type": "AWS::EC2::VPC",
+      "Properties": {
+        "CidrBlock": { "Fn::FindInMap": [ "CidrMap", "VPC", "block" ] },
+        "EnableDnsSupport": true,
+        "EnableDnsHostnames": true,
+        "Tags": [
+          { "Key": "Name",  "Value": { "Fn::Join": ["", [ { "Ref": "ResourceName" }, "-vpc" ] ] } },
+          { "Key": "owner", "Value": { "Ref": "OwnerName" } }
+        ]
+      }
+    },
+    "PublicSubnet1": {
+      "Type": "AWS::EC2::Subnet",
+      "Properties": {
+        "VpcId": { "Ref": "VPC" },
+        "CidrBlock": { "Fn::FindInMap": [ "CidrMap", "Public", "AZ1" ] },
+        "AvailabilityZone": { "Fn::Select": [ "0", { "Fn::GetAZs": { "Ref": "Region" } } ] },
+        "MapPublicIpOnLaunch": true,
+        "Tags": [
+          { "Key": "Name",    "Value": { "Fn::Join": ["", [ { "Ref": "ResourceName" }, "-public-1" ] ] } },
+          { "Key": "owner",   "Value": { "Ref": "OwnerName" } },
+          { "Key": "network", "Value": "public" }
+        ]
+      }
+    },
+    "PublicSubnet2": {
+      "Type": "AWS::EC2::Subnet",
+      "Properties": {
+        "VpcId": { "Ref": "VPC" },
+        "CidrBlock": { "Fn::FindInMap": [ "CidrMap", "Public", "AZ2" ] },
+        "AvailabilityZone": { "Fn::Select": [ "1", { "Fn::GetAZs": { "Ref": "Region" } } ] },
+        "MapPublicIpOnLaunch": true,
+        "Tags": [
+          { "Key": "Name",    "Value": { "Fn::Join": ["", [ { "Ref": "ResourceName" }, "-public-2" ] ] } },
+          { "Key": "owner",   "Value": { "Ref": "OwnerName" } },
+          { "Key": "network", "Value": "public" }
+        ]
+      }
+    },
+    "PrivateSubnet1": {
+      "Type": "AWS::EC2::Subnet",
+      "Properties": {
+        "VpcId": { "Ref": "VPC" },
+        "CidrBlock": { "Fn::FindInMap": [ "CidrMap", "Private", "AZ1" ] },
+        "AvailabilityZone": { "Fn::Select": [ "0", { "Fn::GetAZs": { "Ref": "Region" } } ] },
+        "Tags": [
+          { "Key": "Name",    "Value": { "Fn::Join": ["", [ { "Ref": "ResourceName" }, "-private-1" ] ] } },
+          { "Key": "owner",   "Value": { "Ref": "OwnerName" } },
+          { "Key": "network", "Value": "private" }
+        ]
+      }
+    },
+    "PrivateSubnet2": {
+      "Type": "AWS::EC2::Subnet",
+      "Properties": {
+        "VpcId": { "Ref": "VPC" },
+        "CidrBlock": { "Fn::FindInMap": [ "CidrMap", "Private", "AZ2" ] },
+        "AvailabilityZone": { "Fn::Select": [ "1", { "Fn::GetAZs": { "Ref": "Region" } } ] },
+        "Tags": [
+          { "Key": "Name",    "Value": { "Fn::Join": ["", [ { "Ref": "ResourceName" }, "-private-2" ] ] } },
+          { "Key": "owner",   "Value": { "Ref": "OwnerName" } },
+          { "Key": "network", "Value": "private" }
+        ]
+      }
+    },
+    "InternetGateway": {
+      "Type": "AWS::EC2::InternetGateway",
+      "Properties": {
+        "Tags": [
+          { "Key": "Name",    "Value": { "Fn::Join": ["", [ { "Ref": "ResourceName" }, "-igw" ] ] } },
+          { "Key": "owner",   "Value": { "Ref": "OwnerName" } }
+        ]
+      }
+    },
+    "GatewayAttachment": {
+      "Type": "AWS::EC2::VPCGatewayAttachment",
+      "Properties": {
+        "VpcId": { "Ref": "VPC" },
+        "InternetGatewayId": { "Ref": "InternetGateway" }
+      }
+    },
+    "PublicRouteTable": {
+      "Type": "AWS::EC2::RouteTable",
+      "Properties" : {
+        "VpcId": { "Ref": "VPC" },
+        "Tags": [
+          { "Key": "Name",    "Value": { "Fn::Join": ["", [ { "Ref": "ResourceName" }, "-rt-public" ] ] } },
+          { "Key": "owner",   "Value": { "Ref": "OwnerName" } },
+          { "Key": "network", "Value": "public" }
+        ]
+      }
+    },
+    "PublicRoute": {
+      "Type": "AWS::EC2::Route",
+      "Properties": {
+        "RouteTableId": { "Ref": "PublicRouteTable" },
+        "DestinationCidrBlock": "0.0.0.0/0",
+        "GatewayId": { "Ref": "InternetGateway" }
+      },
+      "DependsOn": "GatewayAttachment"
+    },
+    "PrivateRouteTable": {
+      "Type": "AWS::EC2::RouteTable",
+      "Properties" : {
+        "VpcId": { "Ref": "VPC" },
+        "Tags": [
+          { "Key": "Name",    "Value": { "Fn::Join": ["", [ { "Ref": "ResourceName" }, "-rt-private" ] ] } },
+          { "Key": "owner",   "Value": { "Ref": "OwnerName" } },
+          { "Key": "network", "Value": "private" }
+        ]
+      }
+    },
+    "PublicSubnet1RouteTableAssociation": {
+      "Type": "AWS::EC2::SubnetRouteTableAssociation",
+      "Properties": {
+        "SubnetId": { "Ref": "PublicSubnet1" },
+        "RouteTableId": { "Ref": "PublicRouteTable" }
+      }
+    },
+    "PublicSubnet2RouteTableAssociation": {
+      "Type": "AWS::EC2::SubnetRouteTableAssociation",
+      "Properties": {
+        "SubnetId": { "Ref": "PublicSubnet2" },
+        "RouteTableId": { "Ref": "PublicRouteTable" }
+      }
+    },
+    "PrivateSubnet1RouteTableAssociation": {
+      "Type": "AWS::EC2::SubnetRouteTableAssociation",
+      "Properties": {
+        "SubnetId": { "Ref": "PrivateSubnet1" },
+        "RouteTableId": { "Ref": "PrivateRouteTable" }
+      }
+    },
+    "PrivateSubnet2RouteTableAssociation": {
+      "Type": "AWS::EC2::SubnetRouteTableAssociation",
+      "Properties": {
+        "SubnetId": { "Ref": "PrivateSubnet2" },
+        "RouteTableId": { "Ref": "PrivateRouteTable" }
+      }
+    },
+    "ELBSecurityGroup": {
+      "Type": "AWS::EC2::SecurityGroup",
+      "Properties": {
+        "GroupDescription": { "Fn::Join": ["", [ "SG for ELB of ", { "Ref": "ResourceName" } ] ] },
+        "VpcId": { "Ref": "VPC" },
+        "Tags": [
+          { "Key": "Name",    "Value": { "Fn::Join": ["", [ { "Ref": "ResourceName" }, "-sg-elb" ] ] } },
+          { "Key": "owner",   "Value": { "Ref": "OwnerName" } },
+          { "Key": "network", "Value": "elb" }
+        ]
+      }
+    },
+    "ELBSecurityGroupIngressHTTP": {
+      "Type": "AWS::EC2::SecurityGroupIngress",
+      "Properties": {
+        "GroupId": { "Ref": "ELBSecurityGroup" },
+        "IpProtocol": "tcp",
+        "FromPort": { "Fn::FindInMap": [ "PortMap", "HTTP", "port" ] },
+        "ToPort": { "Fn::FindInMap": [ "PortMap", "HTTP", "port" ] },
+        "CidrIp": "0.0.0.0/0"
+      }
+    },
+    "PublicSecurityGroup": {
+      "Type": "AWS::EC2::SecurityGroup",
+      "Properties": {
+        "GroupDescription": { "Fn::Join": ["", [ "SG for public subnets of ", { "Ref": "ResourceName" } ] ] },
+        "VpcId": { "Ref": "VPC" },
+        "Tags": [
+          { "Key": "Name",    "Value": { "Fn::Join": ["", [ { "Ref": "ResourceName" }, "-sg-public" ] ] } },
+          { "Key": "owner",   "Value": { "Ref": "OwnerName" } },
+          { "Key": "network", "Value": "public" }
+        ]
+      }
+    },
+    "PublicSecurityGroupIngressHTTP": {
+      "Type": "AWS::EC2::SecurityGroupIngress",
+      "Properties": {
+        "GroupId": { "Ref": "PublicSecurityGroup" },
+        "IpProtocol": "tcp",
+        "FromPort": { "Fn::FindInMap": [ "PortMap", "HTTP", "port" ] },
+        "ToPort": { "Fn::FindInMap": [ "PortMap", "HTTP", "port" ] },
+        "SourceSecurityGroupId": { "Ref": "ELBSecurityGroup" }
+      }
+    },
+    "PublicSecurityGroupIngressSSH": {
+      "Type": "AWS::EC2::SecurityGroupIngress",
+      "Properties": {
+        "GroupId": { "Ref": "PublicSecurityGroup" },
+        "IpProtocol": "tcp",
+        "FromPort": { "Fn::FindInMap": [ "PortMap", "SSH", "port" ] },
+        "ToPort": { "Fn::FindInMap": [ "PortMap", "SSH", "port" ] },
+        "CidrIp": "0.0.0.0/0"
+      }
+    },
+    "PrivateSecurityGroup": {
+      "Type": "AWS::EC2::SecurityGroup",
+      "Properties": {
+        "GroupDescription": { "Fn::Join": ["", [ "SG for private subnets of ", { "Ref": "ResourceName" } ] ] },
+        "VpcId": { "Ref": "VPC" },
+        "Tags": [
+          { "Key": "Name",    "Value": { "Fn::Join": ["", [ { "Ref": "ResourceName" }, "-sg-private" ] ] } },
+          { "Key": "owner",   "Value": { "Ref": "OwnerName" } },
+          { "Key": "network", "Value": "private" }
+        ]
+      }
+    },
+    "PrivateSecurityGroupIngressMySQL": {
+      "Type": "AWS::EC2::SecurityGroupIngress",
+      "Properties": {
+        "GroupId": { "Ref": "PrivateSecurityGroup" },
+        "IpProtocol": "tcp",
+        "FromPort": { "Fn::FindInMap": [ "PortMap", "MySQL", "port" ] },
+        "ToPort": { "Fn::FindInMap": [ "PortMap", "MySQL", "port" ] },
+        "SourceSecurityGroupId": { "Ref": "PublicSecurityGroup" }
+      }
+    }
+  }
+}
