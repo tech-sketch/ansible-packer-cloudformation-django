@@ -9,3 +9,13 @@ aws:
     user:
       name: "djangopractice"
       password: ""
+  elb:
+    healthcheck: "HTTP:80/"
+    instance:
+      instancetype: "t2.micro"
+      ami: "ami-a21529cc"
+      keyname: ""
+    autoscaling:
+      max: 2
+      min: 2
+      desired: 2

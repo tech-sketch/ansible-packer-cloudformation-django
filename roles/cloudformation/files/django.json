@@ -36,18 +36,51 @@
     "RDSUserPassword": {
       "Type": "String",
       "Description": "RDS user password"
+    },
+    "HealthCheckTarget": {
+      "Type": "String",
+      "Description": "health check target (like 'HTTP:80/index.html')",
+      "Default": "HTTP:80/"
+    },
+    "AutoScalingAMI": {
+      "Type": "AWS::EC2::Image::Id",
+      "Description": "AutoScaling AMI ID"
+    },
+    "AutoScalingInstanceType": {
+      "Type": "String",
+      "Description": "AutoScaling InstanceType",
+      "Default": "t2.micro"
+    },
+    "AutoScalingInstanceKeyName": {
+      "Type": "AWS::EC2::KeyPair::KeyName",
+      "Description": "AutoScaling KeyPair name"
+    },
+    "AutoScalingMaxSize": {
+      "Type": "Number",
+      "Description": "AutoScaling max size",
+      "Default": 2
+    },
+    "AutoScalingMinSize": {
+      "Type": "Number",
+      "Description": "AutoScaling minx size",
+      "Default": 2
+    },
+    "AutoScalingDesiredCapacity": {
+      "Type": "Number",
+      "Description": "AutoScaling desired capacity",
+      "Default": 2
     }
   },
   "Mappings": {
     "CidrMap": {
-      "VPC"    : { "block": "10.10.0.0/16" },
+      "VPC"    : { "Block": "10.10.0.0/16" },
       "Public" : { "AZ1": "10.10.11.0/24", "AZ2": "10.10.21.0/24" },
       "Private": { "AZ1": "10.10.12.0/24", "AZ2": "10.10.22.0/24" }
     },
     "PortMap": {
-      "HTTP"   : { "port": "80" },
-      "SSH"    : { "port": "22" },
-      "MySQL"  : { "port": "3306" }
+      "HTTP"   : { "Port": 80 , "Protocol": "HTTP"},
+      "SSH"    : { "Port": 22 },
+      "MySQL"  : { "Port": 3306 }
     },
     "RDSMap": {
       "ParameterGroup": {
@@ -62,13 +95,28 @@
         "PreferredBackupWindow": "20:01-20:31",
         "BackupRetentionPeriod": 7
       }
+    },
+    "ELBMap": {
+      "HealthCheck": {
+        "Interval"          : 30,
+        "Timeout"           : 5,
+        "HealthyThreshold"  : 10,
+        "UnhealthyThreshold": 2
+      },
+      "LaunchConfiguration": {
+        "InstanceProfile": "CloudWatchLogsRole"
+      },
+      "AutoScaling": {
+        "Cooldown"              : 300,
+        "HealthCheckGracePeriod": 300
+      }
     }
   },
   "Resources": {
     "VPC": {
       "Type": "AWS::EC2::VPC",
       "Properties": {
-        "CidrBlock": { "Fn::FindInMap": [ "CidrMap", "VPC", "block" ] },
+        "CidrBlock": { "Fn::FindInMap": [ "CidrMap", "VPC", "Block" ] },
         "EnableDnsSupport": true,
         "EnableDnsHostnames": true,
         "Tags": [
@@ -223,8 +271,8 @@
       "Properties": {
         "GroupId": { "Ref": "ELBSecurityGroup" },
         "IpProtocol": "tcp",
-        "FromPort": { "Fn::FindInMap": [ "PortMap", "HTTP", "port" ] },
-        "ToPort": { "Fn::FindInMap": [ "PortMap", "HTTP", "port" ] },
+        "FromPort": { "Fn::FindInMap": [ "PortMap", "HTTP", "Port" ] },
+        "ToPort": { "Fn::FindInMap": [ "PortMap", "HTTP", "Port" ] },
         "CidrIp": "0.0.0.0/0"
       }
     },
@@ -245,8 +293,8 @@
       "Properties": {
         "GroupId": { "Ref": "PublicSecurityGroup" },
         "IpProtocol": "tcp",
-        "FromPort": { "Fn::FindInMap": [ "PortMap", "HTTP", "port" ] },
-        "ToPort": { "Fn::FindInMap": [ "PortMap", "HTTP", "port" ] },
+        "FromPort": { "Fn::FindInMap": [ "PortMap", "HTTP", "Port" ] },
+        "ToPort": { "Fn::FindInMap": [ "PortMap", "HTTP", "Port" ] },
         "SourceSecurityGroupId": { "Ref": "ELBSecurityGroup" }
       }
     },
@@ -255,8 +303,8 @@
       "Properties": {
         "GroupId": { "Ref": "PublicSecurityGroup" },
         "IpProtocol": "tcp",
-        "FromPort": { "Fn::FindInMap": [ "PortMap", "SSH", "port" ] },
-        "ToPort": { "Fn::FindInMap": [ "PortMap", "SSH", "port" ] },
+        "FromPort": { "Fn::FindInMap": [ "PortMap", "SSH", "Port" ] },
+        "ToPort": { "Fn::FindInMap": [ "PortMap", "SSH", "Port" ] },
         "CidrIp": "0.0.0.0/0"
       }
     },
@@ -277,8 +325,8 @@
       "Properties": {
         "GroupId": { "Ref": "PrivateSecurityGroup" },
         "IpProtocol": "tcp",
-        "FromPort": { "Fn::FindInMap": [ "PortMap", "MySQL", "port" ] },
-        "ToPort": { "Fn::FindInMap": [ "PortMap", "MySQL", "port" ] },
+        "FromPort": { "Fn::FindInMap": [ "PortMap", "MySQL", "Port" ] },
+        "ToPort": { "Fn::FindInMap": [ "PortMap", "MySQL", "Port" ] },
         "SourceSecurityGroupId": { "Ref": "PublicSecurityGroup" }
       }
     },
@@ -331,7 +379,7 @@
         "BackupRetentionPeriod": { "Fn::FindInMap": [ "RDSMap", "Instance", "BackupRetentionPeriod" ] },
         "AllowMajorVersionUpgrade": false,
         "AutoMinorVersionUpgrade": true,
-        "Port": { "Fn::FindInMap": [ "PortMap", "MySQL", "port" ] },
+        "Port": { "Fn::FindInMap": [ "PortMap", "MySQL", "Port" ] },
         "DBName": { "Ref": "RDSDBName" },
         "MasterUsername": { "Ref": "RDSUserName" },
         "MasterUserPassword": { "Ref": "RDSUserPassword" },
@@ -341,6 +389,83 @@
         "Tags": [
           { "Key": "Name",    "Value": { "Fn::Join": ["", [ { "Ref": "ResourceName" }, "-rds" ] ] } },
           { "Key": "owner",   "Value": { "Ref": "OwnerName" } }
+        ]
+      }
+    },
+    "ELB": {
+      "Type": "AWS::ElasticLoadBalancing::LoadBalancer",
+      "Properties": {
+        "LoadBalancerName": { "Fn::Join": ["", [ { "Ref": "ResourceName" }, "-elb" ] ] },
+        "CrossZone": true,
+        "Subnets": [
+          { "Ref": "PublicSubnet1" },
+          { "Ref": "PublicSubnet2" }
+        ],
+        "HealthCheck": {
+          "Target"            : { "Ref": "HealthCheckTarget" },
+          "Interval"          : { "Fn::FindInMap": [ "ELBMap", "HealthCheck", "Interval" ] },
+          "Timeout"           : { "Fn::FindInMap": [ "ELBMap", "HealthCheck", "Timeout" ] },
+          "HealthyThreshold"  : { "Fn::FindInMap": [ "ELBMap", "HealthCheck", "HealthyThreshold" ] },
+          "UnhealthyThreshold": { "Fn::FindInMap": [ "ELBMap", "HealthCheck", "UnhealthyThreshold" ] }
+        },
+        "SecurityGroups": [ { "Ref": "ELBSecurityGroup" } ],
+        "Listeners": [
+          {
+            "LoadBalancerPort": { "Fn::FindInMap": [ "PortMap", "HTTP", "Port" ] },
+            "Protocol"        : { "Fn::FindInMap": [ "PortMap", "HTTP", "Protocol" ] },
+            "InstancePort"    : { "Fn::FindInMap": [ "PortMap", "HTTP", "Port" ] },
+            "InstanceProtocol": { "Fn::FindInMap": [ "PortMap", "HTTP", "Protocol" ] }
+          }
+        ],
+        "Tags": [
+          { "Key": "Name",    "Value": { "Fn::Join": ["", [ { "Ref": "ResourceName" }, "-elb" ] ] } },
+          { "Key": "owner",   "Value": { "Ref": "OwnerName" } },
+          { "Key": "network", "Value": "elb" }
+        ]
+      }
+    },
+    "LaunchConfiguration": {
+      "Type": "AWS::AutoScaling::LaunchConfiguration",
+      "Properties": {
+        "ImageId": { "Ref": "AutoScalingAMI" },
+        "InstanceType": { "Ref": "AutoScalingInstanceType" },
+        "KeyName": { "Ref": "AutoScalingInstanceKeyName" },
+        "IamInstanceProfile": { "Fn::FindInMap": [ "ELBMap", "LaunchConfiguration", "InstanceProfile" ] },
+        "InstanceMonitoring": true,
+        "SecurityGroups": [ { "Ref": "PublicSecurityGroup" } ],
+        "UserData": { "Fn::Base64": { "Fn::Join": [ "", [
+          "#!/bin/bash\n",
+          "touch /tmp/userdata_test\n"
+        ] ] } }
+      }
+    },
+    "AutoScalingGroup": {
+      "Type": "AWS::AutoScaling::AutoScalingGroup",
+      "Properties": {
+        "LoadBalancerNames": [ { "Ref": "ELB" } ],
+        "AvailabilityZones": { "Fn::GetAZs": { "Ref": "Region" } },
+        "VPCZoneIdentifier": [
+          { "Ref": "PublicSubnet1" },
+          { "Ref": "PublicSubnet2" }
+        ],
+        "LaunchConfigurationName": { "Ref": "LaunchConfiguration" },
+        "MaxSize": { "Ref": "AutoScalingMaxSize" },
+        "MinSize": { "Ref": "AutoScalingMinSize" },
+        "DesiredCapacity": { "Ref": "AutoScalingDesiredCapacity" },
+        "Cooldown": { "Fn::FindInMap": [ "ELBMap", "AutoScaling", "Cooldown" ] },
+        "HealthCheckGracePeriod": { "Fn::FindInMap": [ "ELBMap", "AutoScaling", "HealthCheckGracePeriod" ] },
+        "HealthCheckType": "ELB",
+        "Tags": [
+          {
+            "Key": "Name",
+            "Value": { "Fn::Join": ["", [ { "Ref": "ResourceName" }, "-asg" ] ] },
+            "PropagateAtLaunch": true
+          },
+          {
+            "Key": "owner",
+            "Value": { "Ref": "OwnerName" },
+            "PropagateAtLaunch": true
+          }
         ]
       }
     }
@@ -353,6 +478,10 @@
     "RDSEndpointPort": {
       "Description": "RDS Endpoint Port",
       "Value": { "Fn::GetAtt": [ "RDS", "Endpoint.Port" ] }
+    },
+    "ELBEndpointAddress": {
+      "Description": "ELB Endpoint Address",
+      "Value": { "Fn::GetAtt": [ "ELB", "DNSName" ] }
     }
   }
 }

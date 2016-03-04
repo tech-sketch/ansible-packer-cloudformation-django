@@ -14,6 +14,13 @@
       RDSDBName: "{{ aws.rds.dbname }}"
       RDSUserName: "{{ aws.rds.user.name }}"
       RDSUserPassword: "{{ aws.rds.user.password }}"
+      HealthCheckTarget: "{{ aws.elb.healthcheck }}"
+      AutoScalingAMI: "{{ aws.elb.instance.ami }}"
+      AutoScalingInstanceType: "{{ aws.elb.instance.instancetype }}"
+      AutoScalingInstanceKeyName: "{{ aws.elb.instance.keyname }}"
+      AutoScalingMaxSize: "{{ aws.elb.autoscaling.max }}"
+      AutoScalingMinSize: "{{ aws.elb.autoscaling.min }}"
+      AutoScalingDesiredCapacity: "{{ aws.elb.autoscaling.desired }}"
     tags:
       Name: "{{ name }}"
       owner: "{{ owner }}"
