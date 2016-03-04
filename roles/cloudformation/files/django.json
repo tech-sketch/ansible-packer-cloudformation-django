@@ -15,6 +15,27 @@
       "Description": "Target region",
       "Default": "ap-northeast-1",
       "AllowedValues": ["ap-northeast-1"]
+    },
+    "RDSInstanceType": {
+      "Type": "String",
+      "Description": "RDS InstnceType",
+      "Default": "db.m1.small"
+    },
+    "RDSStorageSizeGB": {
+      "Type": "Number",
+      "Description": "RDS Instance Storage size (GB)"
+    },
+    "RDSDBName": {
+      "Type": "String",
+      "Description": "RDS db name (only alphanumeric)"
+    },
+    "RDSUserName": {
+      "Type": "String",
+      "Description": "RDS user name"
+    },
+    "RDSUserPassword": {
+      "Type": "String",
+      "Description": "RDS user password"
     }
   },
   "Mappings": {
@@ -27,6 +48,20 @@
       "HTTP"   : { "port": "80" },
       "SSH"    : { "port": "22" },
       "MySQL"  : { "port": "3306" }
+    },
+    "RDSMap": {
+      "ParameterGroup": {
+        "Family"  : "mysql5.6",
+        "Encoding": "utf8"
+      },
+      "Instance": {
+        "Engine": "mysql",
+        "EngineVersion": "5.6.23",
+        "MultiAZ": true,
+        "PreferredMaintenanceWindow": "thu:18:26-thu:18:56",
+        "PreferredBackupWindow": "20:01-20:31",
+        "BackupRetentionPeriod": 7
+      }
     }
   },
   "Resources": {
@@ -246,6 +281,78 @@
         "ToPort": { "Fn::FindInMap": [ "PortMap", "MySQL", "port" ] },
         "SourceSecurityGroupId": { "Ref": "PublicSecurityGroup" }
       }
+    },
+    "RDSSubnetGroup": {
+      "Type": "AWS::RDS::DBSubnetGroup",
+      "Properties": {
+        "DBSubnetGroupDescription": { "Fn::Join": [ "", [ "RDS SubnetGroup of ", { "Ref": "ResourceName" } ] ] },
+        "SubnetIds": [
+          { "Ref": "PrivateSubnet1" },
+          { "Ref": "PrivateSubnet2" }
+        ],
+        "Tags": [
+          { "Key": "Name",    "Value": { "Fn::Join": ["", [ { "Ref": "ResourceName" }, "-db-subnets" ] ] } },
+          { "Key": "owner",   "Value": { "Ref": "OwnerName" } },
+          { "Key": "network", "Value": "private" }
+        ]
+      }
+    },
+    "RDSParameterGroup": {
+      "Type": "AWS::RDS::DBParameterGroup",
+      "Properties": {
+        "Description": { "Fn::Join": [ "", [ "RDS ParameterGroup of ", { "Ref": "ResourceName" } ] ] },
+        "Family": { "Fn::FindInMap": [ "RDSMap", "ParameterGroup", "Family" ] },
+        "Parameters": {
+          "character_set_client": { "Fn::FindInMap": [ "RDSMap", "ParameterGroup", "Encoding" ] },
+          "character_set_connection": { "Fn::FindInMap": [ "RDSMap", "ParameterGroup", "Encoding" ] },
+          "character_set_database": { "Fn::FindInMap": [ "RDSMap", "ParameterGroup", "Encoding" ] },
+          "character_set_results": { "Fn::FindInMap": [ "RDSMap", "ParameterGroup", "Encoding" ] },
+          "character_set_server": { "Fn::FindInMap": [ "RDSMap", "ParameterGroup", "Encoding" ] },
+          "skip-character-set-client-handshake": 1
+        },
+        "Tags": [
+          { "Key": "Name",    "Value": { "Fn::Join": ["", [ { "Ref": "ResourceName" }, "-db-parameters" ] ] } },
+          { "Key": "owner",   "Value": { "Ref": "OwnerName" } },
+          { "Key": "network", "Value": "private" }
+        ]
+      }
+    },
+    "RDS": {
+      "Type": "AWS::RDS::DBInstance",
+      "Properties": {
+        "DBInstanceClass": { "Ref": "RDSInstanceType" },
+        "AllocatedStorage": { "Ref": "RDSStorageSizeGB" },
+        "StorageType": "standard",
+        "MultiAZ": { "Fn::FindInMap": [ "RDSMap", "Instance", "MultiAZ" ] },
+        "Engine": { "Fn::FindInMap": [ "RDSMap", "Instance", "Engine" ] },
+        "EngineVersion": { "Fn::FindInMap": [ "RDSMap", "Instance", "EngineVersion" ] },
+        "PreferredBackupWindow": { "Fn::FindInMap": [ "RDSMap", "Instance", "PreferredBackupWindow" ] },
+        "PreferredMaintenanceWindow": { "Fn::FindInMap": [ "RDSMap", "Instance", "PreferredMaintenanceWindow" ] },
+        "BackupRetentionPeriod": { "Fn::FindInMap": [ "RDSMap", "Instance", "BackupRetentionPeriod" ] },
+        "AllowMajorVersionUpgrade": false,
+        "AutoMinorVersionUpgrade": true,
+        "Port": { "Fn::FindInMap": [ "PortMap", "MySQL", "port" ] },
+        "DBName": { "Ref": "RDSDBName" },
+        "MasterUsername": { "Ref": "RDSUserName" },
+        "MasterUserPassword": { "Ref": "RDSUserPassword" },
+        "DBSubnetGroupName": { "Ref": "RDSSubnetGroup" },
+        "DBParameterGroupName": { "Ref": "RDSParameterGroup" },
+        "VPCSecurityGroups": [ { "Ref": "PrivateSecurityGroup" } ],
+        "Tags": [
+          { "Key": "Name",    "Value": { "Fn::Join": ["", [ { "Ref": "ResourceName" }, "-rds" ] ] } },
+          { "Key": "owner",   "Value": { "Ref": "OwnerName" } }
+        ]
+      }
+    }
+  },
+  "Outputs": {
+    "RDSEndpointAddress": {
+      "Description": "RDS Endpoint Address",
+      "Value": { "Fn::GetAtt": [ "RDS", "Endpoint.Address" ] }
+    },
+    "RDSEndpointPort": {
+      "Description": "RDS Endpoint Port",
+      "Value": { "Fn::GetAtt": [ "RDS", "Endpoint.Port" ] }
     }
   }
 }

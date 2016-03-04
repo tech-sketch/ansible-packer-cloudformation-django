@@ -2,3 +2,10 @@ name: "django-practice"
 owner: "nmatsui"
 aws:
   region: "ap-northeast-1"
+  rds:
+    instancetype: "db.m1.small"
+    storagesize: 5
+    dbname: "djangodb"
+    user:
+      name: "djangopractice"
+      password: ""

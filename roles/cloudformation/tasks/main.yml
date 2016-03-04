@@ -9,6 +9,11 @@
       ResourceName: "{{ name }}"
       OwnerName: "{{ owner }}"
       Region: "{{ aws.region }}"
+      RDSInstanceType: "{{ aws.rds.instancetype }}"
+      RDSStorageSizeGB: "{{ aws.rds.storagesize }}"
+      RDSDBName: "{{ aws.rds.dbname }}"
+      RDSUserName: "{{ aws.rds.user.name }}"
+      RDSUserPassword: "{{ aws.rds.user.password }}"
     tags:
       Name: "{{ name }}"
       owner: "{{ owner }}"
