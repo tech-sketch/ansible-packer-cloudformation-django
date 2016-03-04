@@ -8,13 +8,13 @@ aws:
     dbname: "djangodb"
     user:
       name: "djangopractice"
-      password: ""
+      password: "djangopractice"
   elb:
     healthcheck: "HTTP:80/"
     instance:
       instancetype: "t2.micro"
       ami: "ami-a21529cc"
-      keyname: ""
+      keyname: "elvez-nmatsui"
     autoscaling:
       max: 2
       min: 2
