@@ -103,9 +103,6 @@
         "HealthyThreshold"  : 10,
         "UnhealthyThreshold": 2
       },
-      "LaunchConfiguration": {
-        "InstanceProfile": "CloudWatchLogsRole"
-      },
       "AutoScaling": {
         "Cooldown"              : 300,
         "HealthCheckGracePeriod": 300
@@ -430,7 +427,6 @@
         "ImageId": { "Ref": "AutoScalingAMI" },
         "InstanceType": { "Ref": "AutoScalingInstanceType" },
         "KeyName": { "Ref": "AutoScalingInstanceKeyName" },
-        "IamInstanceProfile": { "Fn::FindInMap": [ "ELBMap", "LaunchConfiguration", "InstanceProfile" ] },
         "InstanceMonitoring": true,
         "SecurityGroups": [ { "Ref": "PublicSecurityGroup" } ],
         "UserData": { "Fn::Base64": { "Fn::Join": [ "", [
@@ -453,8 +449,7 @@
           "sed -i -e 's/<<DATABASE_PORT>>/",
           { "Fn::GetAtt": [ "RDS", "Endpoint.Port" ] },
           "/g' /home/ubuntu/tutorial/tutorial/settings.py\n",
-          "cd /home/ubuntu/tutorial\n",
-          "python manage.py migrate\n",
+          "/home/ubuntu/.pyenv/shims/python /home/ubuntu/tutorial/manage.py migrate\n",
           "service gunicorn restart\n",
           "service nginx restart\n"
         ] ] } }

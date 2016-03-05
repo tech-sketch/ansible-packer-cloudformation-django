@@ -13,7 +13,7 @@ aws:
     healthcheck: "HTTP:80/static/health_check"
     instance:
       instancetype: "t2.micro"
-      ami: "ami-1c414e72"
+      ami: "ami-935e51fd"
       keyname: "elvez-nmatsui"
     autoscaling:
       max: 2
