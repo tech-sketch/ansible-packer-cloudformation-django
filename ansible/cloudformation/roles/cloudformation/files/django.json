@@ -435,7 +435,28 @@
         "SecurityGroups": [ { "Ref": "PublicSecurityGroup" } ],
         "UserData": { "Fn::Base64": { "Fn::Join": [ "", [
           "#!/bin/bash\n",
-          "touch /tmp/userdata_test\n"
+          "sed -i -e 's/<<ALLOWED_HOST>>/",
+          { "Fn::GetAtt": [ "ELB", "DNSName" ] },
+          "/g' /home/ubuntu/tutorial/tutorial/settings.py\n",
+          "sed -i -e 's/<<DATABASE_NAME>>/",
+          { "Ref": "RDSDBName" },
+          "/g' /home/ubuntu/tutorial/tutorial/settings.py\n",
+          "sed -i -e 's/<<DATABASE_USER>>/",
+          { "Ref": "RDSUserName" },
+          "/g' /home/ubuntu/tutorial/tutorial/settings.py\n",
+          "sed -i -e 's/<<DATABASE_PASSEORD>>/",
+          { "Ref": "RDSUserPassword" },
+          "/g' /home/ubuntu/tutorial/tutorial/settings.py\n",
+          "sed -i -e 's/<<DATABASE_HOST>>/",
+          { "Fn::GetAtt": [ "RDS", "Endpoint.Address" ] },
+          "/g' /home/ubuntu/tutorial/tutorial/settings.py\n",
+          "sed -i -e 's/<<DATABASE_PORT>>/",
+          { "Fn::GetAtt": [ "RDS", "Endpoint.Port" ] },
+          "/g' /home/ubuntu/tutorial/tutorial/settings.py\n",
+          "cd /home/ubuntu/tutorial\n",
+          "python manage.py migrate\n",
+          "service gunicorn restart\n",
+          "service nginx restart\n"
         ] ] } }
       }
     },

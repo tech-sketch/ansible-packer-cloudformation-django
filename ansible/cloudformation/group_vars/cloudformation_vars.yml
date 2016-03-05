@@ -10,10 +10,10 @@ aws:
       name: "djangopractice"
       password: "djangopractice"
   elb:
-    healthcheck: "HTTP:80/"
+    healthcheck: "HTTP:80/static/health_check"
     instance:
       instancetype: "t2.micro"
-      ami: "ami-a21529cc"
+      ami: "ami-1c414e72"
       keyname: "elvez-nmatsui"
     autoscaling:
       max: 2
