@@ -1,0 +1,21 @@
+- name: "copy & unarchive django app"
+  unarchive: src={{ app_name }}.tar.gz dest=/home/{{ user }} creates=/home/{{ user }}/{{ app_name }}
+  register: set_app_sources
+
+- name: "pip install -r requirements.txt"
+  shell: |
+    pip install -r requirements.txt
+  args:
+    chdir: "/home/{{ user }}/{{ app_name }}"
+  environment:
+    PATH: "{{ path }}"
+  when: set_app_sources.changed
+
+- name: "collect staticfile"
+  shell: |
+    python manage.py collectstatic --noinput
+  args:
+    chdir: "/home/{{ user }}/{{ app_name }}"
+  environment:
+    PATH: "{{ path }}"
+  when: set_app_sources.changed

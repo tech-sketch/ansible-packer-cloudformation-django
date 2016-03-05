@@ -1,0 +1,9 @@
+- name: "generate & copy gunicorn.conf"
+  template: src=gunicorn.conf dest=/etc/init owner=root group=root
+  become: yes
+  register: copy_gunicornconf
+
+- name: "restart gunicorn"
+  service: name=gunicorn state=restarted
+  become: yes
+  when: copy_gunicornconf.changed

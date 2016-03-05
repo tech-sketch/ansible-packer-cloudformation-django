@@ -1,0 +1,19 @@
+- name: "generate & copy nginx server settings"
+  template: src=server dest=/etc/nginx/sites-available owner=root group=root
+  become: yes
+  register: copy_server
+
+- name: "create symbolic link"
+  file: src=/etc/nginx/sites-available/server dest=/etc/nginx/sites-enabled/server
+        owner=root group=root state=link
+  become: yes
+  when: copy_server.changed
+
+- name: "remove default server setting"
+  file: path=/etc/nginx/sites-enabled/default state=absent
+  become: yes
+
+- name: "restart nginx"
+  service: name=nginx state=restarted
+  become: yes
+  when: copy_server.changed

@@ -1,0 +1,19 @@
+server {
+  listen 80 default_server;
+  server_name server;
+
+  location /favicon.ico {
+    empty_gif;
+    access_log off;
+    log_not_found off;
+  }
+
+  location /static/ {
+    root /home/{{ user }}/{{ app_name }};
+  }
+
+  location / {
+    include proxy_params;
+    proxy_pass http://unix:/home/{{ user }}/{{ app_name }}/gunicorn.sock;
+  }
+}

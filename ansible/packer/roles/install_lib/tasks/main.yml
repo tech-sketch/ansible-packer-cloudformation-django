@@ -1,0 +1,28 @@
+- name: "apt cache update"
+  apt: update_cache=yes
+  become: yes
+
+- name: "apt full upgrade"
+  apt: upgrade=full
+  become: yes
+
+- name: "library insall"
+  apt: name="{{ item }}" state=present
+  become: yes
+  with_items:
+    - "build-essential"
+    - "libssl-dev"
+    - "openssl"
+    - "libreadline6"
+    - "libreadline6-dev"
+    - "libbz2-dev"
+    - "bzip2"
+    - "libxml2-dev"
+    - "libxslt1-dev"
+    - "zlib1g-dev"
+    - "libmysqlclient-dev"
+    - "libsqlite3-dev"
+    - "git"
+    - "nginx"
+    - "mysql-client"
+    - "sqlite3"

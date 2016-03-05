@@ -1,0 +1,35 @@
+- name: "check pyenv"
+  shell: test -e /home/{{ user }}/.pyenv
+  register: check_result
+  changed_when: false
+  failed_when: check_result.rc not in [0, 1]
+
+- name: "git clone pyenv"
+  git: repo="https://github.com/yyuu/pyenv.git"
+       dest="/home/{{ user }}/.pyenv"
+  when: check_result.rc == 1
+
+- name: "get clone pyenv-virtualenv"
+  git: repo="git://github.com/yyuu/pyenv-virtualenv.git"
+       dest="/home/{{ user }}/.pyenv/plugins/pyenv-virtualenv"
+  when: check_result.rc == 1
+
+- name: "change bashrc"
+  shell: |
+    echo 'export PYENV_ROOT="${HOME}/.pyenv"' >> /home/{{ user }}/.bashrc
+    echo 'export PATH="${PYENV_ROOT}/shims:${PYENV_ROOT}/bin:${PATH}"' >> /home/{{ user }}/.bashrc
+    echo 'eval "$(pyenv init -)"' >> /home/{{ user }}/.bashrc
+    echo 'eval "$(pyenv virtualenv-init -)"' >> /home/{{ user }}/.bashrc
+  when: check_result.rc == 1
+
+- name: "install python"
+  shell: |
+    eval "$(pyenv init -)"
+    eval "$(pyenv virtualenv-init -)"
+    pyenv install {{ python.version }}
+    pyenv virtualenv {{ python.version}} {{ python.virtualenv }}
+    pyenv global {{ python.virtualenv }}
+    pip install --upgrade pip
+  environment:
+    PATH: "{{ path }}"
+  when: check_result.rc == 1

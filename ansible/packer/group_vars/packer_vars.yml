@@ -1,0 +1,10 @@
+user: "ubuntu"
+timezone: "Asia/Tokyo"
+python:
+  version: "3.5.1"
+  virtualenv: "django-practice"
+  pyenv_root: "/home/{{ user }}/.pyenv"
+path: "{{ python.pyenv_root }}/shims:{{ python.pyenv_root }}/bin:{{ ansible_env.PATH }}"
+app_name: "tutorial"
+gunicorn:
+  workers: 3
