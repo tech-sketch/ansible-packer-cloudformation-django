@@ -20,15 +20,15 @@
     ]
    },{
     "type": "ansible-local",
-    "playbook_file": "../playbooks/packer/packer.yml",
-    "group_vars": "../playbooks/packer/group_vars",
+    "playbook_file": "../playbook/packer.yml",
+    "group_vars": "../playbook/group_vars",
     "role_paths": [
-      "../playbooks/packer/roles/setup_os",
-      "../playbooks/packer/roles/install_lib",
-      "../playbooks/packer/roles/install_python",
-      "../playbooks/packer/roles/setup_django_app",
-      "../playbooks/packer/roles/setup_gunicorn",
-      "../playbooks/packer/roles/setup_nginx"
+      "../playbook/roles/packer_setup_os",
+      "../playbook/roles/packer_install_lib",
+      "../playbook/roles/packer_install_python",
+      "../playbook/roles/packer_setup_django_app",
+      "../playbook/roles/packer_setup_gunicorn",
+      "../playbook/roles/packer_setup_nginx"
     ]
   }]
 }

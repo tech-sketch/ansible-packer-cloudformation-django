@@ -69,6 +69,14 @@
       "Type": "Number",
       "Description": "AutoScaling desired capacity",
       "Default": 2
+    },
+    "UserDataDjangoSettingsPath": {
+      "Type": "String",
+      "Description": "Django settings path using user_data"
+    },
+    "UserDataMigrateCmd": {
+      "Type": "String",
+      "Description": "DB migrate command using user_data"
     }
   },
   "Mappings": {
@@ -433,23 +441,36 @@
           "#!/bin/bash\n",
           "sed -i -e 's/<<ALLOWED_HOST>>/",
           { "Fn::GetAtt": [ "ELB", "DNSName" ] },
-          "/g' /home/ubuntu/tutorial/tutorial/settings.py\n",
+          "/g' ",
+          { "Ref": "UserDataDjangoSettingsPath" },
+          "\n",
           "sed -i -e 's/<<DATABASE_NAME>>/",
           { "Ref": "RDSDBName" },
-          "/g' /home/ubuntu/tutorial/tutorial/settings.py\n",
+          "/g' ",
+          { "Ref": "UserDataDjangoSettingsPath" },
+          "\n",
           "sed -i -e 's/<<DATABASE_USER>>/",
           { "Ref": "RDSUserName" },
-          "/g' /home/ubuntu/tutorial/tutorial/settings.py\n",
+          "/g' ",
+          { "Ref": "UserDataDjangoSettingsPath" },
+          "\n",
           "sed -i -e 's/<<DATABASE_PASSEORD>>/",
           { "Ref": "RDSUserPassword" },
-          "/g' /home/ubuntu/tutorial/tutorial/settings.py\n",
+          "/g' ",
+          { "Ref": "UserDataDjangoSettingsPath" },
+          "\n",
           "sed -i -e 's/<<DATABASE_HOST>>/",
           { "Fn::GetAtt": [ "RDS", "Endpoint.Address" ] },
-          "/g' /home/ubuntu/tutorial/tutorial/settings.py\n",
+          "/g' ",
+          { "Ref": "UserDataDjangoSettingsPath" },
+          "\n",
           "sed -i -e 's/<<DATABASE_PORT>>/",
           { "Fn::GetAtt": [ "RDS", "Endpoint.Port" ] },
-          "/g' /home/ubuntu/tutorial/tutorial/settings.py\n",
-          "/home/ubuntu/.pyenv/shims/python /home/ubuntu/tutorial/manage.py migrate\n",
+          "/g' ",
+          { "Ref": "UserDataDjangoSettingsPath" },
+          "\n",
+          { "Ref": "UserDataMigrateCmd" },
+          "\n",
           "service gunicorn restart\n",
           "service nginx restart\n"
         ] ] } }

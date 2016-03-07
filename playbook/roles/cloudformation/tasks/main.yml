@@ -21,6 +21,8 @@
       AutoScalingMaxSize: "{{ aws.elb.autoscaling.max }}"
       AutoScalingMinSize: "{{ aws.elb.autoscaling.min }}"
       AutoScalingDesiredCapacity: "{{ aws.elb.autoscaling.desired }}"
+      UserDataDjangoSettingsPath: "{{ aliases.app_path }}/{{ server.app_name }}/settings.py"
+      UserDataMigrateCmd: "{{ aliases.pyenv_root}}/shims/python {{ aliases.app_path }}/manage.py migrate"
     tags:
       Name: "{{ name }}"
       owner: "{{ owner }}"

@@ -9,11 +9,11 @@ server {
   }
 
   location /static/ {
-    root /home/{{ user }}/{{ app_name }};
+    root {{ aliases.app_path }};
   }
 
   location / {
     include proxy_params;
-    proxy_pass http://unix:/home/{{ user }}/{{ app_name }}/gunicorn.sock;
+    proxy_pass http://unix:{{ aliases.app_path }}/gunicorn.sock;
   }
 }

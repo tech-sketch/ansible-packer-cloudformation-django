@@ -1,0 +1,11 @@
+- name: "check timezone"
+  become: yes
+  shell: /usr/bin/timedatectl status | grep {{ server.timezone }}
+  register: check_result
+  changed_when: false
+  failed_when: check_result.rc not in [0, 1]
+
+- name: "set timezone when it is not {{ server.timezone }}"
+  become: yes
+  shell: /usr/bin/timedatectl set-timezone {{ server.timezone }}
+  when: check_result.rc == 1

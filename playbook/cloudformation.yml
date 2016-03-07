@@ -1,7 +1,5 @@
 - hosts: localhost
   connection: local
-  gather_facts: no
-  vars_files:
-    - group_vars/cloudformation_vars.yml
+  gather_facts: yes
   roles:
     - role: cloudformation

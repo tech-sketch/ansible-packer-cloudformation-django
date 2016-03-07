@@ -1,0 +1,9 @@
+- hosts: all
+  gather_facts: yes
+  roles:
+    - role: packer_setup_os
+    - role: packer_install_lib
+    - role: packer_install_python
+    - role: packer_setup_django_app
+    - role: packer_setup_gunicorn
+    - role: packer_setup_nginx

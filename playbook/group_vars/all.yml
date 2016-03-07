@@ -1,0 +1,35 @@
+name: "django-practice"
+owner: "nmatsui"
+aws:
+  region: "ap-northeast-1"
+  rds:
+    instancetype: "db.m1.small"
+    storagesize: 5
+    dbname: "djangodb"
+    user:
+      name: "djangopractice"
+      password: "djangopractice"
+  elb:
+    healthcheck: "HTTP:80/polls/"
+    instance:
+      instancetype: "t2.micro"
+      ami: "ami-a8eee1c6"
+      keyname: "elvez-nmatsui"
+    autoscaling:
+      max: 2
+      min: 2
+      desired: 2
+server:
+  user: "ubuntu"
+  timezone: "Asia/Tokyo"
+  app_name: "tutorial"
+  python:
+    version: "3.5.1"
+    virtualenv: "django-practice"
+  gunicorn:
+    workers: 3
+aliases:
+  home: "/home/{{ server.user }}"
+  pyenv_root: "/home/{{ server.user }}/.pyenv"
+  app_path: "/home/{{ server.user}}/{{ server.app_name }}"
+  path: "/home/{{ server.user}}/.pyenv/shims:/home/{{ server.user }}/.pyenv//bin:{{ ansible_env.PATH }}"
